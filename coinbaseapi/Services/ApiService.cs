@@ -29,18 +29,18 @@ namespace coinbaseapi.Services
             _hubContext = hubContext;
         }
 
-        public async Task<Price> GetCurrentBtcPrice()
+        public async Task<Price> GetCurrentBtcAndEthereumPrices()
         {
-            var response = await _httpClient.GetStringAsync("https://api.coindesk.com/v1/bpi/currentprice/NZD");
+            var response = await _httpClient.GetStringAsync("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin%2Cethereum&vs_currencies=nzd");
             CurrentPriceResponse currentPrice = JsonConvert.DeserializeObject<CurrentPriceResponse>(response);
-            return new Price() { Value = currentPrice.BPI.NZD.RateFloat, Date = Convert.ToDateTime(currentPrice.Time.UpdatedIso) };
+            return new Price() { BitcoinValue = currentPrice.Bitcoin.RateFloat, EthereumValue = currentPrice.Ethereum.RateFloat, Date = DateTime.UtcNow };
         }
 
         public async Task StartPollingCoindesk()
         {
             while (true)
             {
-                Price currentPrice = await GetCurrentBtcPrice();
+                Price currentPrice = await GetCurrentBtcAndEthereumPrices();
                 AddPriceToListInMemory(currentPrice);
                 SendCurrentPriceToHub(currentPrice);
                 Thread.Sleep(_pollingInterval);
